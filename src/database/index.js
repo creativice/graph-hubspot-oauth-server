@@ -2,12 +2,20 @@ require('dotenv').config();
 
 var Datastore = require('nedb'),
   db = new Datastore({
-    filename: process.env.DB_FILE || './database.nedb',
+    filename: process.env.DB_FILE || './db/database.nedb',
     autoload: true,
   });
 
 class Database {
-  set(payload) {
+  async set(payload) {
+    await new Promise((resolve, reject) => {
+      db.remove({}, { multi: true }, (err, n) => {
+        if (err) {
+          reject(reject);
+        }
+        resolve(n);
+      });
+    });
     db.insert(payload);
     return new Promise((resolve, reject) => {
       db.insert(payload, (err, doc) => {
