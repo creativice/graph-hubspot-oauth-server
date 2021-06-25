@@ -42,7 +42,11 @@ appRouter.get(Hubspot.PATH, async ({ request, response }) => {
     if (payload.access_token && payload.refresh_token) {
       db.set(payload);
     }
-    response.body = JSON.stringify(payload);
+    response.body = `
+    ${JSON.stringify(payload)}
+      <br>
+      <a href="/redirect">Refresh</a>
+      `;
   } else {
     response.body = 'Please check the callback url';
   }
@@ -51,7 +55,17 @@ appRouter.get(Hubspot.PATH, async ({ request, response }) => {
 appRouter.get('/', async ({ response }) => {
   const saved = await db.get();
   if (saved) {
-    response.body = JSON.stringify(saved);
+    response.body = `
+    <pre>${JSON.stringify(saved)}
+    </pre>
+    <br>
+    access_token:
+    <br>
+    <code>${saved.access_token}</code>
+    <br>
+      <br>
+      <a href="/redirect">Refresh</a>
+      `;
   } else {
     response.redirect(`http://localhost:${SERVER_PORT}/redirect`);
   }
