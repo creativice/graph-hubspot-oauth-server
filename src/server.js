@@ -10,13 +10,15 @@ const {
 } = require('dotenv').config().parsed;
 
 const Hubspot = require('./hubspot');
+const Database = require('./database');
 
 const app = new Koa();
 const appRouter = new Router();
 
 const hubspot = new Hubspot();
+const db = new Database();
 
-appRouter.get('/', async ({ response }) => {
+appRouter.get('/redirect', ({ response }) => {
   response.redirect(
     OAUTH_APP_INSTALL_BASE_URL +
       `?client_id=${encodeURIComponent(OAUTH_CLIENT_ID)}` + // app's client ID
@@ -33,12 +35,25 @@ appRouter.get(Hubspot.PATH, async ({ request, response }) => {
   const { code } = request.query;
   if (code) {
     console.log(`Code: ${code}`);
-    response.body = JSON.stringify({
+    const payload = {
       code,
       ...(await hubspot.retrieveTokens(code)),
-    });
+    };
+    if (payload.access_token && payload.refresh_token) {
+      db.set(payload);
+    }
+    response.body = JSON.stringify(payload);
   } else {
     response.body = 'Please check the callback url';
+  }
+});
+
+appRouter.get('/', async ({ response }) => {
+  const saved = await db.get();
+  if (saved) {
+    response.body = JSON.stringify(saved);
+  } else {
+    response.redirect(`http://localhost:${SERVER_PORT}/redirect`);
   }
 });
 
